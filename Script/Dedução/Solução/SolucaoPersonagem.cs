@@ -19,10 +19,10 @@ public class SolucaoPersonagem
     public string nomeCompleto;
 
     /// <summary>
-    /// Um identificador para a imagem do personagem. Pode ser o nome do arquivo (ex: "foto_bruno.png")
-    /// ou um ID que você usa para buscar a imagem em um gerenciador de recursos.
+    /// (ALTERADO) A imagem (Sprite) do retrato do personagem.
+    /// Este campo substitui o antigo 'idDaFoto'.
     /// </summary>
-    public string idDaFoto;
+    public UnityEngine.Sprite retrato;
 
     /// <summary>
     /// O verdadeiro envolvimento deste personagem no roubo.

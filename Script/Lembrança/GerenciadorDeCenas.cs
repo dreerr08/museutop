@@ -1,161 +1,137 @@
-// GerenciadorDeCenas.cs
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic; // Necessário para List
 
 public class GerenciadorDeCenas : MonoBehaviour
 {
-    // Singleton para garantir que apenas uma instância deste gestor exista.
     public static GerenciadorDeCenas Instancia { get; private set; }
 
-    // A referência à imagem de fade agora é privada e gerida internamente.
-    private Image fadeImage;
+    [Header("Configuração do Fade")]
     public float fadeSpeed = 1f;
-    public Color fadeColor = Color.black; // Permite customizar a cor do fade no Inspector.
+    public Color fadeColor = Color.black;
 
-    // Variáveis para guardar o estado entre as cenas.
+    [Header("Base de Dados")]
+    [Tooltip("Arraste aqui o asset 'BancoDeDesbloqueios' do seu projeto.")]
+    public BancoDeDesbloqueios bancoDeDesbloqueios;
+
+    private Image fadeImage;
     private string cenaDeRetorno;
     private Vector3 posicaoDeRetorno;
     private float rotacaoXCameraDeRetorno;
     private float rotacaoYJogadorDeRetorno;
+    private string idLembrancaAtiva;
 
     private void Awake()
     {
-        // Implementação do padrão Singleton.
         if (Instancia == null)
         {
             Instancia = this;
-            DontDestroyOnLoad(gameObject); // Torna este objeto persistente entre as cenas.
-            SceneManager.sceneLoaded += OnSceneLoaded; // Subscreve ao evento de cena carregada.
-
-            // Cria o Canvas e a Imagem de fade dinamicamente para que também sejam persistentes.
+            DontDestroyOnLoad(gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
             SetupFadeCanvas();
+
+            if (bancoDeDesbloqueios == null)
+            {
+                Debug.LogError("[GerenciadorDeCenas] ERRO CRÍTICO: O 'Banco De Desbloqueios' não foi atribuído no Inspector!");
+            }
         }
         else
         {
-            Destroy(gameObject); // Destrói duplicatas.
+            Destroy(gameObject);
         }
     }
 
-    /// <summary>
-    /// Inicia a transição para uma cena de lembrança, guardando os dados de retorno.
-    /// </summary>
-    public void IrParaLembranca(string nomeCenaLembranca)
+    public void IrParaLembranca(string nomeCenaLembranca, string idLembranca)
     {
+        this.idLembrancaAtiva = idLembranca;
+        Debug.Log($"[GerenciadorDeCenas] Iniciando transição. Lembrança ativa foi definida como: '{idLembrancaAtiva}'.");
+
         this.cenaDeRetorno = SceneManager.GetActiveScene().name;
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
         {
             this.posicaoDeRetorno = player.transform.position;
             this.rotacaoYJogadorDeRetorno = player.transform.eulerAngles.y;
-
-            // **ALTERAÇÃO PRINCIPAL AQUI: Pegar o pitch diretamente do controller**
             FirstPersonController fpController = player.GetComponent<FirstPersonController>();
-            if (fpController != null)
-            {
-                this.rotacaoXCameraDeRetorno = fpController.GetCurrentPitch();
-            }
-            else
-            {
-                // Fallback caso não encontre o controller. O ideal é que ele sempre exista.
-                this.rotacaoXCameraDeRetorno = Camera.main.transform.localEulerAngles.x;
-                Debug.LogWarning("FirstPersonController não encontrado para salvar o pitch. Usando eulerAngles da câmera como fallback.");
-            }
+            if (fpController != null) this.rotacaoXCameraDeRetorno = fpController.GetCurrentPitch();
         }
-
-        Debug.Log($"Indo para a lembrança: {nomeCenaLembranca}. Posição: {posicaoDeRetorno}. Rotação Jogador Y: {rotacaoYJogadorDeRetorno}, Rotação Câmera X: {rotacaoXCameraDeRetorno}");
         StartCoroutine(FadeAndLoadScene(nomeCenaLembranca));
     }
 
-    /// <summary>
-    /// Inicia a transição de volta para a cena original.
-    /// </summary>
     public void RetornarDaLembranca()
     {
-        if (!string.IsNullOrEmpty(cenaDeRetorno))
+        Debug.Log("[GerenciadorDeCenas] Método RetornarDaLembranca foi chamado.");
+
+        if (!string.IsNullOrEmpty(idLembrancaAtiva) && bancoDeDesbloqueios != null)
         {
-            Debug.Log($"Retornando para a cena: {cenaDeRetorno}");
-            StartCoroutine(FadeAndLoadScene(cenaDeRetorno));
+            Debug.Log($"[GerenciadorDeCenas] A processar desbloqueio para a lembrança: '{idLembrancaAtiva}'.");
+
+            List<int> idsParaDesbloquear = bancoDeDesbloqueios.GetPersonagensParaDesbloquear(idLembrancaAtiva);
+
+            if (idsParaDesbloquear.Count > 0)
+            {
+                Debug.Log($"[GerenciadorDeCenas] Banco de Desbloqueios retornou {idsParaDesbloquear.Count} IDs de personagem para desbloquear. A enviar para o PlayerState.");
+            }
+            else
+            {
+                Debug.LogWarning($"[GerenciadorDeCenas] AVISO: O Banco de Desbloqueios não encontrou nenhuma entrada ou a entrada está vazia para o ID '{idLembrancaAtiva}'.");
+            }
+
+            PlayerState.Instance.ConcluirLembranca(idLembrancaAtiva, idsParaDesbloquear);
+            idLembrancaAtiva = null;
         }
         else
         {
-            Debug.LogError("Nome da cena de retorno está vazio! Não é possível retornar.");
+            Debug.LogError($"[GerenciadorDeCenas] ERRO: Não foi possível processar o desbloqueio. ID da Lembrança Ativa: '{idLembrancaAtiva}', Banco de Desbloqueios atribuído: {bancoDeDesbloqueios != null}");
+        }
+
+        if (!string.IsNullOrEmpty(cenaDeRetorno))
+        {
+            StartCoroutine(FadeAndLoadScene(cenaDeRetorno));
         }
     }
 
-    // Corrotina que lida com o fade e o carregamento da cena.
     private IEnumerator FadeAndLoadScene(string sceneName)
     {
         yield return StartCoroutine(FadeOut());
         SceneManager.LoadScene(sceneName);
     }
 
-    // **ALTERAÇÃO**
-    // Este método agora é mais simples e delega a lógica de restauração.
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log($"Cena '{scene.name}' carregada.");
-
-        // Se a cena carregada for a cena para a qual devíamos retornar...
         if (scene.name == cenaDeRetorno)
         {
-            // Inicia uma corrotina para restaurar o estado.
-            // Isso evita a "race condition" com o primeiro Update() do FirstPersonController.
             StartCoroutine(RestaurarEstadoDoJogador());
         }
-
-        // Inicia o fade in na nova cena, independentemente de qual seja.
         StartCoroutine(FadeIn());
     }
 
-    // **NOVA CORROTINA**
-    /// <summary>
-    /// Corrotina que restaura a posição e rotação do jogador APÓS o primeiro frame ter sido renderizado.
-    /// </summary>
     private IEnumerator RestaurarEstadoDoJogador()
     {
-        // A MUDANÇA CRÍTICA ESTÁ AQUI: Espera até o fim do frame atual.
-        // Isso garante que o Update() do FirstPersonController já rodou uma vez,
-        // limpando qualquer input residual de mouse.
         yield return new WaitForEndOfFrame();
-
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
         {
             CharacterController charController = player.GetComponent<CharacterController>();
             if (charController != null) charController.enabled = false;
-
             player.transform.position = posicaoDeRetorno;
-
             if (charController != null) charController.enabled = true;
-
-            Debug.Log($"Posição do jogador restaurada para: {posicaoDeRetorno}");
 
             FirstPersonController fpController = player.GetComponent<FirstPersonController>();
             if (fpController != null)
             {
                 fpController.InicializarRotacao(rotacaoYJogadorDeRetorno, rotacaoXCameraDeRetorno);
-                Debug.Log($"Rotação inicializada via FirstPersonController. RotaçãoY: {rotacaoYJogadorDeRetorno}, RotaçãoX: {rotacaoXCameraDeRetorno}");
             }
-            else
-            {
-                Debug.LogError("FirstPersonController não encontrado no jogador para inicializar a rotação!");
-            }
-        }
-        else
-        {
-            Debug.LogError("Jogador não encontrado na cena de retorno para restaurar a posição!");
         }
     }
 
-    // Corrotinas de Fade (In e Out)
     private IEnumerator FadeIn()
     {
         fadeImage.gameObject.SetActive(true);
         float elapsedTime = 0f;
         Color c = fadeColor;
-
         while (elapsedTime < fadeSpeed)
         {
             elapsedTime += Time.deltaTime;
@@ -171,7 +147,6 @@ public class GerenciadorDeCenas : MonoBehaviour
         fadeImage.gameObject.SetActive(true);
         float elapsedTime = 0f;
         Color c = fadeColor;
-
         while (elapsedTime < fadeSpeed)
         {
             elapsedTime += Time.deltaTime;
@@ -181,7 +156,6 @@ public class GerenciadorDeCenas : MonoBehaviour
         }
     }
 
-    // Método para criar o Canvas e a Imagem de fade.
     private void SetupFadeCanvas()
     {
         GameObject canvasGO = new GameObject("FadeCanvas");
