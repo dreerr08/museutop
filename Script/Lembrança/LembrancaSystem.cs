@@ -15,7 +15,8 @@ public class LembrancaSystem : MonoBehaviour
     {
         if (jogadorProximo && Input.GetKeyDown(KeyCode.E))
         {
-            Debug.Log($"[LembrancaSystem] Jogador pressionou 'E' para a lembrança com ID: '{idDaLembranca}'.");
+            // O BLOCO DE VERIFICAÇÃO FOI REMOVIDO DAQUI.
+            // Agora, o sistema sempre tentará ativar a lembrança ao pressionar 'E'.
 
             if (string.IsNullOrEmpty(idDaLembranca))
             {
@@ -23,13 +24,7 @@ public class LembrancaSystem : MonoBehaviour
                 return;
             }
 
-            if (PlayerState.Instance.JaConcluiuLembranca(idDaLembranca))
-            {
-                Debug.LogWarning($"[LembrancaSystem] AVISO: A lembrança '{idDaLembranca}' já foi concluída. Nenhuma ação será tomada.");
-                return;
-            }
-
-            Debug.Log($"[LembrancaSystem] Solicitando ao GerenciadorDeCenas para ir para a lembrança '{idDaLembranca}'.");
+            Debug.Log($"[LembrancaSystem] Jogador ativou a lembrança com ID: '{idDaLembranca}'.");
             GerenciadorDeCenas.Instancia.IrParaLembranca(cenaLembranca, idDaLembranca);
         }
     }
@@ -38,7 +33,6 @@ public class LembrancaSystem : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log("[LembrancaSystem] Jogador entrou na área de interação.");
             jogadorProximo = true;
         }
     }
@@ -47,7 +41,6 @@ public class LembrancaSystem : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log("[LembrancaSystem] Jogador saiu da área de interação.");
             jogadorProximo = false;
         }
     }

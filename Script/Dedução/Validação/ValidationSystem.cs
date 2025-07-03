@@ -47,14 +47,15 @@ public class ValidationSystem : MonoBehaviour
             SolucaoPersonagem solucao = SolutionManager.Instance.GetSolucaoPorId(deducao.idPersonagem);
             if (solucao == null) continue;
 
+            // Comparamos os campos para a dedução.
             bool nomeCorreto = deducao.nomeEscolhido == solucao.nomeCompleto;
-            // (ALTERADO) A comparação agora é feita diretamente entre os objetos Sprite.
-            bool fotoCorreta = deducao.retratoEscolhido == solucao.retrato;
+            // bool fotoCorreta = deducao.retratoEscolhido == solucao.retrato; // <<-- LINHA REMOVIDA DA VALIDAÇÃO
             bool papelCorreto = deducao.papelEscolhido.HasValue && deducao.papelEscolhido.Value == solucao.papel;
             bool destinoCorreto = deducao.destinoEscolhido.HasValue && deducao.destinoEscolhido.Value == solucao.destino;
 
-            // Se tudo estiver 100% correto, adiciona à lista de possíveis acertos.
-            if (nomeCorreto && fotoCorreta && papelCorreto && destinoCorreto)
+            // A condição de acerto agora ignora a foto.
+            // Apenas o nome, papel e destino precisam de estar corretos.
+            if (nomeCorreto && papelCorreto && destinoCorreto)
             {
                 acertosNestaRodada.Add(deducao);
             }

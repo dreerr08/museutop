@@ -11,7 +11,7 @@ public class CharacterEntryUI : MonoBehaviour
 {
     [Header("Referências dos Componentes")]
     [SerializeField] private TMP_Dropdown nameDropdown;
-    [SerializeField] private TMP_Dropdown photoSelectorDropdown; // Nome alterado para clareza
+    // O campo [SerializeField] private TMP_Dropdown photoSelectorDropdown; FOI REMOVIDO
     [SerializeField] private TMP_Dropdown roleDropdown;
     [SerializeField] private TMP_Dropdown fateDropdown;
     [SerializeField] private GameObject lockOverlay;
@@ -44,16 +44,7 @@ public class CharacterEntryUI : MonoBehaviour
         nameDropdown.options.Add(new TMP_Dropdown.OptionData("???"));
         nameDropdown.AddOptions(SolutionManager.Instance.GetTodosOsNomes());
 
-        // (ALTERADO) Seletor de Imagens
-        photoSelectorDropdown.ClearOptions();
-        photoSelectorDropdown.options.Add(new TMP_Dropdown.OptionData("???")); // Opção padrão sem imagem
-        var allPortraits = SolutionManager.Instance.GetTodosOsRetratos();
-        foreach (var portrait in allPortraits)
-        {
-            // Adiciona uma opção com o nome do sprite como texto e o sprite como imagem
-            photoSelectorDropdown.options.Add(new TMP_Dropdown.OptionData("", portrait));
-        }
-        photoSelectorDropdown.RefreshShownValue(); // Garante que a UI visual seja atualizada
+        // A LÓGICA PARA POPULAR O DROPDOWN DE FOTOS FOI REMOVIDA
 
         // Papéis
         roleDropdown.ClearOptions();
@@ -69,7 +60,7 @@ public class CharacterEntryUI : MonoBehaviour
     private void AddListeners()
     {
         nameDropdown.onValueChanged.AddListener(OnNameChanged);
-        photoSelectorDropdown.onValueChanged.AddListener(OnPhotoChanged); // Nome do método alterado
+        // O LISTENER PARA O DROPDOWN DE FOTOS FOI REMOVIDO
         roleDropdown.onValueChanged.AddListener(OnRoleChanged);
         fateDropdown.onValueChanged.AddListener(OnFateChanged);
     }
@@ -82,16 +73,7 @@ public class CharacterEntryUI : MonoBehaviour
         ValidationSystem.Instance.ValidarTodasAsDeducoes();
     }
 
-    // (ALTERADO) Método para lidar com a seleção de imagem
-    public void OnPhotoChanged(int index)
-    {
-        if (isLocked) return;
-
-        // Se o índice for 0 ("???"), limpa a escolha. Caso contrário, atribui o sprite.
-        Sprite selectedPortrait = (index == 0) ? null : photoSelectorDropdown.options[index].image;
-        PlayerState.Instance.GetDeducaoPorId(characterId).retratoEscolhido = selectedPortrait;
-        ValidationSystem.Instance.ValidarTodasAsDeducoes();
-    }
+    // O MÉTODO OnPhotoChanged FOI COMPLETAMENTE REMOVIDO
 
     public void OnRoleChanged(int index)
     {
@@ -116,7 +98,7 @@ public class CharacterEntryUI : MonoBehaviour
         {
             isLocked = true;
             nameDropdown.interactable = false;
-            photoSelectorDropdown.interactable = false;
+            // A LINHA PARA DESATIVAR O DROPDOWN DE FOTOS FOI REMOVIDA
             roleDropdown.interactable = false;
             fateDropdown.interactable = false;
             lockOverlay.SetActive(true);
