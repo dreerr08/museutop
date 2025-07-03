@@ -108,7 +108,8 @@ public class UIManager : MonoBehaviour
         {
             journalPanel = panelObject;
 
-            // O caminho para encontrar o container agora é dentro do Scroll View
+            // --- MUDANÇA PRINCIPAL AQUI ---
+            // O caminho para encontrar o container agora é mais específico.
             entriesContainer = journalPanel.transform.Find("Scroll View/Viewport/Content");
 
             if (entriesContainer == null)

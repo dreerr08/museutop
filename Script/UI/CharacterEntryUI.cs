@@ -11,13 +11,28 @@ public class CharacterEntryUI : MonoBehaviour
 {
     [Header("Referências dos Componentes")]
     [SerializeField] private TMP_Dropdown nameDropdown;
+    [SerializeField] private TMP_Dropdown photoIdDropdown;
     [SerializeField] private TMP_Dropdown roleDropdown;
     [SerializeField] private TMP_Dropdown fateDropdown;
-    // [SerializeField] private Image portraitImage; // Para o retrato
-    [SerializeField] private GameObject lockOverlay; // Para o "selo" de confirmação
+    [SerializeField] private GameObject lockOverlay;
 
     private int characterId;
     private bool isLocked = false;
+
+    // ALTERADO: A inscrição do evento foi movida para OnEnable.
+    // OnEnable é chamado sempre que o objeto se torna ativo na cena.
+    private void OnEnable()
+    {
+        ValidationSystem.OnDeductionsConfirmed += LockIfConfirmed;
+    }
+
+    // ALTERADO: O cancelamento da inscrição foi movido para OnDisable.
+    // OnDisable é chamado quando o objeto é desativado, destruído ou quando a cena muda.
+    // Isto garante que a referência é removida antes que o objeto seja destruído.
+    private void OnDisable()
+    {
+        ValidationSystem.OnDeductionsConfirmed -= LockIfConfirmed;
+    }
 
     /// <summary>
     /// Configura a entrada da UI com os dados iniciais e popula os dropdowns.
@@ -29,24 +44,25 @@ public class CharacterEntryUI : MonoBehaviour
 
         PopulateDropdowns();
         AddListeners();
-
-        // Se inscrever no evento de confirmação para poder se trancar
-        ValidationSystem.OnDeductionsConfirmed += LockIfConfirmed;
+        // A inscrição do evento foi removida daqui.
     }
 
-    private void OnDestroy()
-    {
-        // Sempre se desinscreva de eventos quando o objeto for destruído
-        ValidationSystem.OnDeductionsConfirmed -= LockIfConfirmed;
-    }
+    // O método OnDestroy já não é necessário para esta tarefa,
+    // uma vez que OnDisable é mais seguro para a gestão de eventos.
 
     private void PopulateDropdowns()
     {
         // --- Nomes ---
         List<string> allNames = SolutionManager.Instance.GetTodosOsNomes();
         nameDropdown.ClearOptions();
-        nameDropdown.options.Add(new TMP_Dropdown.OptionData("???")); // Opção padrão
+        nameDropdown.options.Add(new TMP_Dropdown.OptionData("???"));
         nameDropdown.AddOptions(allNames);
+
+        // --- IDs das Fotos ---
+        List<string> allPhotoIds = SolutionManager.Instance.GetTodosOsIdsDeFoto();
+        photoIdDropdown.ClearOptions();
+        photoIdDropdown.options.Add(new TMP_Dropdown.OptionData("???"));
+        photoIdDropdown.AddOptions(allPhotoIds);
 
         // --- Papéis ---
         List<string> allRoles = System.Enum.GetNames(typeof(PapelNoRoubo)).ToList();
@@ -63,8 +79,8 @@ public class CharacterEntryUI : MonoBehaviour
 
     private void AddListeners()
     {
-        // Adiciona funções para serem chamadas quando o valor de um dropdown mudar
         nameDropdown.onValueChanged.AddListener(OnNameChanged);
+        photoIdDropdown.onValueChanged.AddListener(OnPhotoIdChanged);
         roleDropdown.onValueChanged.AddListener(OnRoleChanged);
         fateDropdown.onValueChanged.AddListener(OnFateChanged);
     }
@@ -79,10 +95,17 @@ public class CharacterEntryUI : MonoBehaviour
         ValidationSystem.Instance.ValidarTodasAsDeducoes();
     }
 
+    public void OnPhotoIdChanged(int index)
+    {
+        if (isLocked || index == 0) return;
+        string selectedPhotoId = photoIdDropdown.options[index].text;
+        PlayerState.Instance.GetDeducaoPorId(characterId).fotoEscolhida = selectedPhotoId;
+        ValidationSystem.Instance.ValidarTodasAsDeducoes();
+    }
+
     public void OnRoleChanged(int index)
     {
         if (isLocked || index == 0) return;
-        // Converte a string de volta para o enum
         PapelNoRoubo selectedRole = (PapelNoRoubo)System.Enum.Parse(typeof(PapelNoRoubo), roleDropdown.options[index].text);
         PlayerState.Instance.GetDeducaoPorId(characterId).papelEscolhido = selectedRole;
         ValidationSystem.Instance.ValidarTodasAsDeducoes();
@@ -100,11 +123,11 @@ public class CharacterEntryUI : MonoBehaviour
 
     private void LockIfConfirmed(List<DeducaoJogador> confirmedDeductions)
     {
-        // Verifica se a *sua própria* ID está na lista de deduções recém-confirmadas
         if (confirmedDeductions.Any(d => d.idPersonagem == this.characterId))
         {
             isLocked = true;
             nameDropdown.interactable = false;
+            photoIdDropdown.interactable = false;
             roleDropdown.interactable = false;
             fateDropdown.interactable = false;
             lockOverlay.SetActive(true);
