@@ -15,3 +15,5 @@ MonoBehaviour:
   todosOsDesbloqueios:
   - idDaLembranca: 1
     idsDePersonagensParaDesbloquear: 010000000200000003000000
+  - idDaLembranca: 2
+    idsDePersonagensParaDesbloquear: 04000000

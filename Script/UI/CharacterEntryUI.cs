@@ -4,14 +4,10 @@ using TMPro;
 using System.Linq;
 using System.Collections.Generic;
 
-/// <summary>
-/// Controla os elementos de UI de uma única entrada de personagem no diário.
-/// </summary>
 public class CharacterEntryUI : MonoBehaviour
 {
     [Header("Referências dos Componentes")]
     [SerializeField] private TMP_Dropdown nameDropdown;
-    // O campo [SerializeField] private TMP_Dropdown photoSelectorDropdown; FOI REMOVIDO
     [SerializeField] private TMP_Dropdown roleDropdown;
     [SerializeField] private TMP_Dropdown fateDropdown;
     [SerializeField] private GameObject lockOverlay;
@@ -39,66 +35,63 @@ public class CharacterEntryUI : MonoBehaviour
 
     private void PopulateDropdowns()
     {
-        // Nomes
         nameDropdown.ClearOptions();
         nameDropdown.options.Add(new TMP_Dropdown.OptionData("???"));
         nameDropdown.AddOptions(SolutionManager.Instance.GetTodosOsNomes());
 
-        // A LÓGICA PARA POPULAR O DROPDOWN DE FOTOS FOI REMOVIDA
-
-        // Papéis
         roleDropdown.ClearOptions();
-        roleDropdown.options.Add(new TMP_Dropdown.OptionData("???"));
         roleDropdown.AddOptions(System.Enum.GetNames(typeof(PapelNoRoubo)).ToList());
 
-        // Destinos
         fateDropdown.ClearOptions();
-        fateDropdown.options.Add(new TMP_Dropdown.OptionData("???"));
         fateDropdown.AddOptions(System.Enum.GetNames(typeof(DestinoFinal)).ToList());
     }
 
     private void AddListeners()
     {
         nameDropdown.onValueChanged.AddListener(OnNameChanged);
-        // O LISTENER PARA O DROPDOWN DE FOTOS FOI REMOVIDO
         roleDropdown.onValueChanged.AddListener(OnRoleChanged);
         fateDropdown.onValueChanged.AddListener(OnFateChanged);
     }
 
-    // --- Funções de Callback ---
     public void OnNameChanged(int index)
     {
         if (isLocked || index == 0) return;
         PlayerState.Instance.GetDeducaoPorId(characterId).nomeEscolhido = nameDropdown.options[index].text;
         ValidationSystem.Instance.ValidarTodasAsDeducoes();
-    }
 
-    // O MÉTODO OnPhotoChanged FOI COMPLETAMENTE REMOVIDO
+        // LOG ADICIONADO
+        Debug.Log("[AUTOSAVE TRIGGER] Mudança de nome. A chamar SaveGame...");
+        SaveLoadManager.Instance.SaveGame();
+    }
 
     public void OnRoleChanged(int index)
     {
-        if (isLocked || index == 0) return;
-        var selectedRole = (PapelNoRoubo)System.Enum.Parse(typeof(PapelNoRoubo), roleDropdown.options[index].text);
-        PlayerState.Instance.GetDeducaoPorId(characterId).papelEscolhido = selectedRole;
+        if (isLocked) return;
+        PlayerState.Instance.GetDeducaoPorId(characterId).papelEscolhido = (PapelNoRoubo)index;
         ValidationSystem.Instance.ValidarTodasAsDeducoes();
+
+        // LOG ADICIONADO
+        Debug.Log("[AUTOSAVE TRIGGER] Mudança de papel. A chamar SaveGame...");
+        SaveLoadManager.Instance.SaveGame();
     }
 
     public void OnFateChanged(int index)
     {
-        if (isLocked || index == 0) return;
-        var selectedFate = (DestinoFinal)System.Enum.Parse(typeof(DestinoFinal), fateDropdown.options[index].text);
-        PlayerState.Instance.GetDeducaoPorId(characterId).destinoEscolhido = selectedFate;
+        if (isLocked) return;
+        PlayerState.Instance.GetDeducaoPorId(characterId).destinoEscolhido = (DestinoFinal)index;
         ValidationSystem.Instance.ValidarTodasAsDeducoes();
+
+        // LOG ADICIONADO
+        Debug.Log("[AUTOSAVE TRIGGER] Mudança de destino. A chamar SaveGame...");
+        SaveLoadManager.Instance.SaveGame();
     }
 
-    // --- Lógica de Confirmação ---
     private void LockIfConfirmed(List<DeducaoJogador> confirmedDeductions)
     {
         if (confirmedDeductions.Any(d => d.idPersonagem == this.characterId))
         {
             isLocked = true;
             nameDropdown.interactable = false;
-            // A LINHA PARA DESATIVAR O DROPDOWN DE FOTOS FOI REMOVIDA
             roleDropdown.interactable = false;
             fateDropdown.interactable = false;
             lockOverlay.SetActive(true);

@@ -8,6 +8,9 @@
 /// </summary>
 public enum PapelNoRoubo
 {
+    // NOVO: Valor padrão para quando nada foi selecionado.
+    Desconhecido,
+
     // Adicione aqui todos os papéis possíveis no seu jogo.
     Cerebro,
     Musculo,
@@ -25,6 +28,9 @@ public enum PapelNoRoubo
 /// </summary>
 public enum DestinoFinal
 {
+    // NOVO: Valor padrão para quando nada foi selecionado.
+    Desconhecido,
+
     // Adicione aqui todos os destinos possíveis.
     Preso,
     FugiuComDinheiro,

@@ -5,7 +5,7 @@ using System.Linq;
 public class PlayerState : MonoBehaviour
 {
     public static PlayerState Instance { get; private set; }
-    private List<DeducaoJogador> listaDeDeducoes;
+    private List<DeducaoJogador> listaDeDeducoes = new List<DeducaoJogador>();
     private HashSet<string> lembrancasConcluidas = new HashSet<string>();
     private List<int> perfisDesbloqueadosNoDiario = new List<int>();
 
@@ -19,7 +19,6 @@ public class PlayerState : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(this.gameObject);
-            listaDeDeducoes = new List<DeducaoJogador>();
         }
     }
 
@@ -29,16 +28,9 @@ public class PlayerState : MonoBehaviour
 
     public void ConcluirLembranca(string idLembranca, List<int> idsParaDesbloquear)
     {
-        Debug.Log($"[PlayerState] Tentando concluir a lembrança '{idLembranca}' com {idsParaDesbloquear.Count} IDs para desbloquear.");
-
-        if (lembrancasConcluidas.Contains(idLembranca))
-        {
-            Debug.LogWarning("[PlayerState] AVISO: Tentativa de concluir uma lembrança que já estava na lista de concluídas.");
-            return;
-        }
-
+        if (lembrancasConcluidas.Contains(idLembranca)) return;
         lembrancasConcluidas.Add(idLembranca);
-        Debug.Log($"[PlayerState] Lembrança '{idLembranca}' adicionada à lista de concluídas.");
+        Debug.Log($"[PlayerState] Lembrança '{idLembranca}' concluída.");
 
         foreach (var id in idsParaDesbloquear)
         {
@@ -46,18 +38,50 @@ public class PlayerState : MonoBehaviour
             {
                 perfisDesbloqueadosNoDiario.Add(id);
                 listaDeDeducoes.Add(new DeducaoJogador(id));
-                Debug.Log($"[PlayerState] SUCESSO: Perfil de personagem com ID {id} foi adicionado à lista de desbloqueados e uma nova DeducaoJogador foi criada.");
-            }
-            else
-            {
-                Debug.Log($"[PlayerState] INFO: O perfil com ID {id} já estava desbloqueado. Nenhuma nova dedução foi criada para ele.");
+                Debug.Log($"[PlayerState] Perfil {id} desbloqueado.");
             }
         }
     }
 
     public List<int> GetPerfisDesbloqueados()
     {
-        Debug.Log($"[PlayerState] GetPerfisDesbloqueados foi chamado. A retornar uma lista com {perfisDesbloqueadosNoDiario.Count} perfis.");
         return perfisDesbloqueadosNoDiario;
+    }
+
+    public HashSet<string> GetLembrancasConcluidas()
+    {
+        return lembrancasConcluidas;
+    }
+
+    /// <summary>
+    /// Carrega os dados de um save, com logs detalhados.
+    /// </summary>
+    public void LoadData(GameData data)
+    {
+        Debug.Log($"--- [PlayerState] A RECEBER DADOS PARA CARREGAR ---");
+
+        // Log do estado ANTES da alteração
+        Debug.Log($"[PlayerState] ESTADO ANTES DO LOAD: Perfis={this.perfisDesbloqueadosNoDiario.Count}, Lembranças={this.lembrancasConcluidas.Count}");
+
+        if (data != null)
+        {
+            // Carrega um jogo existente
+            this.listaDeDeducoes = data.listaDeDeducoes;
+            this.lembrancasConcluidas = new HashSet<string>(data.lembrancasConcluidas);
+            this.perfisDesbloqueadosNoDiario = data.perfisDesbloqueadosNoDiario;
+            Debug.Log($"[PlayerState] Dados de save recebidos. Perfis a carregar: {data.perfisDesbloqueadosNoDiario.Count}, Lembranças: {data.lembrancasConcluidas.Count}");
+        }
+        else
+        {
+            // Reinicia para um novo jogo
+            this.listaDeDeducoes.Clear();
+            this.lembrancasConcluidas.Clear();
+            this.perfisDesbloqueadosNoDiario.Clear();
+            Debug.LogWarning("[PlayerState] Recebeu dados nulos. O estado foi REINICIADO para um novo jogo.");
+        }
+
+        // Log do estado DEPOIS da alteração
+        Debug.Log($"[PlayerState] ESTADO DEPOIS DO LOAD: Perfis={this.perfisDesbloqueadosNoDiario.Count}, Lembranças={this.lembrancasConcluidas.Count}");
+        Debug.Log($"--- [PlayerState] FIM DO PROCESSO DE LOAD ---");
     }
 }

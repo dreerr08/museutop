@@ -1,7 +1,7 @@
 /// <summary>
 /// Armazena o estado atual das deduções de um jogador para um único personagem.
 /// </summary>
-[System.Serializable] // Serializable para que você possa ver a lista de deduções no Inspector
+[System.Serializable]
 public class DeducaoJogador
 {
     /// <summary>
@@ -21,13 +21,15 @@ public class DeducaoJogador
 
     /// <summary>
     /// O papel que o jogador atribuiu a este personagem.
+    /// MUDANÇA: Não é mais Nullable. O valor padrão é 'Desconhecido'.
     /// </summary>
-    public PapelNoRoubo? papelEscolhido;
+    public PapelNoRoubo papelEscolhido;
 
     /// <summary>
     /// O destino que o jogador atribuiu a este personagem.
+    /// MUDANÇA: Não é mais Nullable. O valor padrão é 'Desconhecido'.
     /// </summary>
-    public DestinoFinal? destinoEscolhido;
+    public DestinoFinal destinoEscolhido;
 
     /// <summary>
     /// Uma flag para saber se esta dedução já foi validada como correta.
@@ -41,9 +43,10 @@ public class DeducaoJogador
     {
         this.idPersonagem = personagemId;
         this.nomeEscolhido = null;
-        this.retratoEscolhido = null; // Começa como nulo
-        this.papelEscolhido = null;
-        this.destinoEscolhido = null;
+        this.retratoEscolhido = null;
+        // MUDANÇA: Define o estado inicial como Desconhecido em vez de null.
+        this.papelEscolhido = PapelNoRoubo.Desconhecido;
+        this.destinoEscolhido = DestinoFinal.Desconhecido;
         this.estaConfirmado = false;
     }
 }

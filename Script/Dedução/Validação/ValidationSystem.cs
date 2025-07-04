@@ -47,14 +47,12 @@ public class ValidationSystem : MonoBehaviour
             SolucaoPersonagem solucao = SolutionManager.Instance.GetSolucaoPorId(deducao.idPersonagem);
             if (solucao == null) continue;
 
-            // Comparamos os campos para a dedução.
+            // MUDANÇA NA VALIDAÇÃO:
+            // Agora, verificamos se o valor escolhido NÃO É "Desconhecido" antes de comparar.
             bool nomeCorreto = deducao.nomeEscolhido == solucao.nomeCompleto;
-            // bool fotoCorreta = deducao.retratoEscolhido == solucao.retrato; // <<-- LINHA REMOVIDA DA VALIDAÇÃO
-            bool papelCorreto = deducao.papelEscolhido.HasValue && deducao.papelEscolhido.Value == solucao.papel;
-            bool destinoCorreto = deducao.destinoEscolhido.HasValue && deducao.destinoEscolhido.Value == solucao.destino;
+            bool papelCorreto = deducao.papelEscolhido != PapelNoRoubo.Desconhecido && deducao.papelEscolhido == solucao.papel;
+            bool destinoCorreto = deducao.destinoEscolhido != DestinoFinal.Desconhecido && deducao.destinoEscolhido == solucao.destino;
 
-            // A condição de acerto agora ignora a foto.
-            // Apenas o nome, papel e destino precisam de estar corretos.
             if (nomeCorreto && papelCorreto && destinoCorreto)
             {
                 acertosNestaRodada.Add(deducao);

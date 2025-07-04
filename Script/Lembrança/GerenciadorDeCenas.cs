@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Collections;
-using System.Collections.Generic; // Necessário para List
+using System.Collections.Generic;
 
 public class GerenciadorDeCenas : MonoBehaviour
 {
@@ -16,12 +16,8 @@ public class GerenciadorDeCenas : MonoBehaviour
     [Tooltip("Arraste aqui o asset 'BancoDeDesbloqueios' do seu projeto.")]
     public BancoDeDesbloqueios bancoDeDesbloqueios;
 
+    private Stack<EstadoDeRetorno> historicoDeCenas = new Stack<EstadoDeRetorno>();
     private Image fadeImage;
-    private string cenaDeRetorno;
-    private Vector3 posicaoDeRetorno;
-    private float rotacaoXCameraDeRetorno;
-    private float rotacaoYJogadorDeRetorno;
-    private string idLembrancaAtiva;
 
     private void Awake()
     {
@@ -29,7 +25,6 @@ public class GerenciadorDeCenas : MonoBehaviour
         {
             Instancia = this;
             DontDestroyOnLoad(gameObject);
-            SceneManager.sceneLoaded += OnSceneLoaded;
             SetupFadeCanvas();
 
             if (bancoDeDesbloqueios == null)
@@ -45,70 +40,58 @@ public class GerenciadorDeCenas : MonoBehaviour
 
     public void IrParaLembranca(string nomeCenaLembranca, string idLembranca)
     {
-        this.idLembrancaAtiva = idLembranca;
-        Debug.Log($"[GerenciadorDeCenas] Iniciando transição. Lembrança ativa foi definida como: '{idLembrancaAtiva}'.");
+        var novoEstado = new EstadoDeRetorno
+        {
+            cenaDeRetorno = SceneManager.GetActiveScene().name,
+            idLembrancaAtiva = idLembranca
+        };
 
-        this.cenaDeRetorno = SceneManager.GetActiveScene().name;
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
         {
-            this.posicaoDeRetorno = player.transform.position;
-            this.rotacaoYJogadorDeRetorno = player.transform.eulerAngles.y;
+            novoEstado.posicaoDeRetorno = player.transform.position;
+            novoEstado.rotacaoYJogadorDeRetorno = player.transform.eulerAngles.y;
             FirstPersonController fpController = player.GetComponent<FirstPersonController>();
-            if (fpController != null) this.rotacaoXCameraDeRetorno = fpController.GetCurrentPitch();
+            if (fpController != null)
+            {
+                novoEstado.rotacaoXCameraDeRetorno = fpController.GetCurrentPitch();
+            }
         }
+
+        historicoDeCenas.Push(novoEstado);
         StartCoroutine(FadeAndLoadScene(nomeCenaLembranca));
     }
 
     public void RetornarDaLembranca()
     {
-        Debug.Log("[GerenciadorDeCenas] Método RetornarDaLembranca foi chamado.");
-
-        if (!string.IsNullOrEmpty(idLembrancaAtiva) && bancoDeDesbloqueios != null)
+        if (historicoDeCenas.Count == 0)
         {
-            Debug.Log($"[GerenciadorDeCenas] A processar desbloqueio para a lembrança: '{idLembrancaAtiva}'.");
-
-            List<int> idsParaDesbloquear = bancoDeDesbloqueios.GetPersonagensParaDesbloquear(idLembrancaAtiva);
-
-            if (idsParaDesbloquear.Count > 0)
-            {
-                Debug.Log($"[GerenciadorDeCenas] Banco de Desbloqueios retornou {idsParaDesbloquear.Count} IDs de personagem para desbloquear. A enviar para o PlayerState.");
-            }
-            else
-            {
-                Debug.LogWarning($"[GerenciadorDeCenas] AVISO: O Banco de Desbloqueios não encontrou nenhuma entrada ou a entrada está vazia para o ID '{idLembrancaAtiva}'.");
-            }
-
-            PlayerState.Instance.ConcluirLembranca(idLembrancaAtiva, idsParaDesbloquear);
-            idLembrancaAtiva = null;
-        }
-        else
-        {
-            Debug.LogError($"[GerenciadorDeCenas] ERRO: Não foi possível processar o desbloqueio. ID da Lembrança Ativa: '{idLembrancaAtiva}', Banco de Desbloqueios atribuído: {bancoDeDesbloqueios != null}");
+            Debug.LogError("[GerenciadorDeCenas] ERRO: Tentativa de retornar, mas o histórico de cenas está vazio!");
+            return;
         }
 
-        if (!string.IsNullOrEmpty(cenaDeRetorno))
+        EstadoDeRetorno estadoParaRestaurar = historicoDeCenas.Pop();
+        string idLembrancaConcluida = estadoParaRestaurar.idLembrancaAtiva;
+
+        if (!string.IsNullOrEmpty(idLembrancaConcluida) && bancoDeDesbloqueios != null)
         {
-            StartCoroutine(FadeAndLoadScene(cenaDeRetorno));
+            List<int> idsParaDesbloquear = bancoDeDesbloqueios.GetPersonagensParaDesbloquear(idLembrancaConcluida);
+            PlayerState.Instance.ConcluirLembranca(idLembrancaConcluida, idsParaDesbloquear);
         }
+
+        StartCoroutine(FadeAndLoadScene(estadoParaRestaurar.cenaDeRetorno, estadoParaRestaurar));
     }
 
-    private IEnumerator FadeAndLoadScene(string sceneName)
+    private IEnumerator FadeAndLoadScene(string sceneName, EstadoDeRetorno estadoParaRestaurar = null)
     {
         yield return StartCoroutine(FadeOut());
-        SceneManager.LoadScene(sceneName);
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
+        while (!asyncLoad.isDone) yield return null;
+        if (estadoParaRestaurar != null) yield return StartCoroutine(RestaurarEstadoDoJogador(estadoParaRestaurar));
+        yield return StartCoroutine(FadeIn());
     }
 
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        if (scene.name == cenaDeRetorno)
-        {
-            StartCoroutine(RestaurarEstadoDoJogador());
-        }
-        StartCoroutine(FadeIn());
-    }
-
-    private IEnumerator RestaurarEstadoDoJogador()
+    private IEnumerator RestaurarEstadoDoJogador(EstadoDeRetorno estado)
     {
         yield return new WaitForEndOfFrame();
         GameObject player = GameObject.FindWithTag("Player");
@@ -116,13 +99,12 @@ public class GerenciadorDeCenas : MonoBehaviour
         {
             CharacterController charController = player.GetComponent<CharacterController>();
             if (charController != null) charController.enabled = false;
-            player.transform.position = posicaoDeRetorno;
+            player.transform.position = estado.posicaoDeRetorno;
             if (charController != null) charController.enabled = true;
-
             FirstPersonController fpController = player.GetComponent<FirstPersonController>();
             if (fpController != null)
             {
-                fpController.InicializarRotacao(rotacaoYJogadorDeRetorno, rotacaoXCameraDeRetorno);
+                fpController.InicializarRotacao(estado.rotacaoYJogadorDeRetorno, estado.rotacaoXCameraDeRetorno);
             }
         }
     }
@@ -132,13 +114,7 @@ public class GerenciadorDeCenas : MonoBehaviour
         fadeImage.gameObject.SetActive(true);
         float elapsedTime = 0f;
         Color c = fadeColor;
-        while (elapsedTime < fadeSpeed)
-        {
-            elapsedTime += Time.deltaTime;
-            c.a = Mathf.Lerp(1, 0, elapsedTime / fadeSpeed);
-            fadeImage.color = c;
-            yield return null;
-        }
+        while (elapsedTime < fadeSpeed) { c.a = Mathf.Lerp(1, 0, elapsedTime / fadeSpeed); fadeImage.color = c; elapsedTime += Time.deltaTime; yield return null; }
         fadeImage.gameObject.SetActive(false);
     }
 
@@ -147,13 +123,7 @@ public class GerenciadorDeCenas : MonoBehaviour
         fadeImage.gameObject.SetActive(true);
         float elapsedTime = 0f;
         Color c = fadeColor;
-        while (elapsedTime < fadeSpeed)
-        {
-            elapsedTime += Time.deltaTime;
-            c.a = Mathf.Lerp(0, 1, elapsedTime / fadeSpeed);
-            fadeImage.color = c;
-            yield return null;
-        }
+        while (elapsedTime < fadeSpeed) { c.a = Mathf.Lerp(0, 1, elapsedTime / fadeSpeed); fadeImage.color = c; elapsedTime += Time.deltaTime; yield return null; }
     }
 
     private void SetupFadeCanvas()
@@ -163,23 +133,14 @@ public class GerenciadorDeCenas : MonoBehaviour
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 100;
-        canvasGO.AddComponent<CanvasScaler>();
-        canvasGO.AddComponent<GraphicRaycaster>();
         GameObject imageGO = new GameObject("FadeImage");
         imageGO.transform.SetParent(canvasGO.transform);
         fadeImage = imageGO.AddComponent<Image>();
         fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, 0);
         RectTransform rectTransform = imageGO.GetComponent<RectTransform>();
-        rectTransform.anchorMin = new Vector2(0, 0);
-        rectTransform.anchorMax = new Vector2(1, 1);
-        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
         rectTransform.sizeDelta = Vector2.zero;
-        rectTransform.anchoredPosition = Vector2.zero;
         imageGO.SetActive(false);
-    }
-
-    private void OnDestroy()
-    {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 }
