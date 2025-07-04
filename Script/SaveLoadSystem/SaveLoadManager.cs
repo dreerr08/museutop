@@ -116,13 +116,16 @@ public class SaveLoadManager : MonoBehaviour
         }
     }
 
+    // ---------- CÓDIGO CORRIGIDO ABAIXO ----------
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.name == "Museu")
+        // A condição foi alterada para "SampleScene".
+        if (scene.name == "SampleScene")
         {
             AplicarDadosCarregados();
         }
     }
+    // ---------- FIM DA CORREÇÃO ----------
 
     public GameData GetDataParaSlot(int slot)
     {

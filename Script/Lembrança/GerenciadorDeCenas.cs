@@ -82,8 +82,17 @@ public class GerenciadorDeCenas : MonoBehaviour
         StartCoroutine(FadeAndLoadScene(estadoParaRestaurar.cenaDeRetorno, estadoParaRestaurar));
     }
 
+    // --- MÉTODO ALTERADO ---
     private IEnumerator FadeAndLoadScene(string sceneName, EstadoDeRetorno estadoParaRestaurar = null)
     {
+        // --- ADIÇÃO PRINCIPAL ---
+        // Salva o jogo antes de iniciar o fade out e a transição de cena.
+        if (SaveLoadManager.Instance != null)
+        {
+            SaveLoadManager.Instance.SaveGame();
+            Debug.Log("[AUTOSAVE] Jogo salvo devido à transição de cena.");
+        }
+
         yield return StartCoroutine(FadeOut());
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
         while (!asyncLoad.isDone) yield return null;

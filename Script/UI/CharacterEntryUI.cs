@@ -30,6 +30,11 @@ public class CharacterEntryUI : MonoBehaviour
         this.characterId = charId;
         lockOverlay.SetActive(false);
         PopulateDropdowns();
+
+        // --- ADIÇÃO PRINCIPAL ---
+        // Carrega o estado salvo e atualiza os dropdowns
+        LoadState();
+
         AddListeners();
     }
 
@@ -46,8 +51,40 @@ public class CharacterEntryUI : MonoBehaviour
         fateDropdown.AddOptions(System.Enum.GetNames(typeof(DestinoFinal)).ToList());
     }
 
+    // --- NOVO MÉTODO ---
+    /// <summary>
+    /// Carrega os dados do PlayerState e atualiza a UI para refletir as deduções salvas.
+    /// </summary>
+    private void LoadState()
+    {
+        // Busca a dedução salva para este personagem
+        DeducaoJogador deducaoSalva = PlayerState.Instance.GetDeducaoPorId(this.characterId);
+        if (deducaoSalva == null) return;
+
+        // Atualiza o dropdown de nomes
+        if (!string.IsNullOrEmpty(deducaoSalva.nomeEscolhido))
+        {
+            int nameIndex = nameDropdown.options.FindIndex(option => option.text == deducaoSalva.nomeEscolhido);
+            if (nameIndex > 0) // Garante que não é "???"
+            {
+                nameDropdown.value = nameIndex;
+            }
+        }
+
+        // Atualiza os dropdowns de papel e destino
+        // A ordem dos enums corresponde diretamente aos índices dos dropdowns
+        roleDropdown.value = (int)deducaoSalva.papelEscolhido;
+        fateDropdown.value = (int)deducaoSalva.destinoEscolhido;
+    }
+
     private void AddListeners()
     {
+        // Remove listeners antigos para evitar chamadas duplicadas
+        nameDropdown.onValueChanged.RemoveAllListeners();
+        roleDropdown.onValueChanged.RemoveAllListeners();
+        fateDropdown.onValueChanged.RemoveAllListeners();
+
+        // Adiciona os listeners para salvar as alterações
         nameDropdown.onValueChanged.AddListener(OnNameChanged);
         roleDropdown.onValueChanged.AddListener(OnRoleChanged);
         fateDropdown.onValueChanged.AddListener(OnFateChanged);
@@ -55,34 +92,35 @@ public class CharacterEntryUI : MonoBehaviour
 
     public void OnNameChanged(int index)
     {
-        if (isLocked || index == 0) return;
-        PlayerState.Instance.GetDeducaoPorId(characterId).nomeEscolhido = nameDropdown.options[index].text;
-        ValidationSystem.Instance.ValidarTodasAsDeducoes();
+        if (isLocked) return;
 
-        // LOG ADICIONADO
-        Debug.Log("[AUTOSAVE TRIGGER] Mudança de nome. A chamar SaveGame...");
+        // Atualiza a dedução no PlayerState
+        string nome = (index == 0) ? null : nameDropdown.options[index].text;
+        PlayerState.Instance.GetDeducaoPorId(characterId).nomeEscolhido = nome;
+
+        ValidationSystem.Instance.ValidarTodasAsDeducoes();
         SaveLoadManager.Instance.SaveGame();
     }
 
     public void OnRoleChanged(int index)
     {
         if (isLocked) return;
-        PlayerState.Instance.GetDeducaoPorId(characterId).papelEscolhido = (PapelNoRoubo)index;
-        ValidationSystem.Instance.ValidarTodasAsDeducoes();
 
-        // LOG ADICIONADO
-        Debug.Log("[AUTOSAVE TRIGGER] Mudança de papel. A chamar SaveGame...");
+        // Atualiza a dedução no PlayerState
+        PlayerState.Instance.GetDeducaoPorId(characterId).papelEscolhido = (PapelNoRoubo)index;
+
+        ValidationSystem.Instance.ValidarTodasAsDeducoes();
         SaveLoadManager.Instance.SaveGame();
     }
 
     public void OnFateChanged(int index)
     {
         if (isLocked) return;
-        PlayerState.Instance.GetDeducaoPorId(characterId).destinoEscolhido = (DestinoFinal)index;
-        ValidationSystem.Instance.ValidarTodasAsDeducoes();
 
-        // LOG ADICIONADO
-        Debug.Log("[AUTOSAVE TRIGGER] Mudança de destino. A chamar SaveGame...");
+        // Atualiza a dedução no PlayerState
+        PlayerState.Instance.GetDeducaoPorId(characterId).destinoEscolhido = (DestinoFinal)index;
+
+        ValidationSystem.Instance.ValidarTodasAsDeducoes();
         SaveLoadManager.Instance.SaveGame();
     }
 
