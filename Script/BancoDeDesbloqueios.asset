@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92b3bf65be4d11a45a4721c3bd170d2f, type: 3}
   m_Name: BancoDeDesbloqueios
   m_EditorClassIdentifier: 
-  todosOsDesbloqueios: []
+  todosOsDesbloqueios:
+  - idDaLembranca: 1
+    idsDePersonagensParaDesbloquear: 010000000200000003000000
