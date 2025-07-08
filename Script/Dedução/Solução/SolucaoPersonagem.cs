@@ -1,3 +1,5 @@
+// Arquivo: dreerr08/museutop/museutop-6ea31f3c45b1c0f813e03be5a1425dc73cd4b2a0/Script/Dedução/Solução/SolucaoPersonagem.cs
+
 // O atributo [System.Serializable] é extremamente importante para o Unity.
 // Ele permite que você crie e edite instâncias desta classe diretamente
 // no Inspector da Unity, tornando muito fácil preencher os dados do seu jogo
@@ -35,4 +37,10 @@ public class SolucaoPersonagem
     /// Usa o enum para garantir consistência.
     /// </summary>
     public DestinoFinal destino;
+
+    /// <summary>
+    /// (NOVO) O ID do personagem que assassinou este.
+    /// Use 0 se não foi assassinado (ex: acidente, fugiu, etc.).
+    /// </summary>
+    public int idAssassino;
 }

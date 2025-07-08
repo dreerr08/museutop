@@ -1,3 +1,5 @@
+// Arquivo: dreerr08/museutop/museutop-6ea31f3c45b1c0f813e03be5a1425dc73cd4b2a0/Script/Dedução/Validação/ValidationSystem.cs
+
 using UnityEngine;
 using System;
 using System.Collections.Generic;
@@ -48,12 +50,13 @@ public class ValidationSystem : MonoBehaviour
             if (solucao == null) continue;
 
             // MUDANÇA NA VALIDAÇÃO:
-            // Agora, verificamos se o valor escolhido NÃO É "Desconhecido" antes de comparar.
             bool nomeCorreto = deducao.nomeEscolhido == solucao.nomeCompleto;
             bool papelCorreto = deducao.papelEscolhido != PapelNoRoubo.Desconhecido && deducao.papelEscolhido == solucao.papel;
             bool destinoCorreto = deducao.destinoEscolhido != DestinoFinal.Desconhecido && deducao.destinoEscolhido == solucao.destino;
+            bool assassinoCorreto = deducao.idAssassinoEscolhido == solucao.idAssassino; // NOVA CONDIÇÃO
 
-            if (nomeCorreto && papelCorreto && destinoCorreto)
+            // A validação agora inclui o assassino
+            if (nomeCorreto && papelCorreto && destinoCorreto && assassinoCorreto)
             {
                 acertosNestaRodada.Add(deducao);
             }

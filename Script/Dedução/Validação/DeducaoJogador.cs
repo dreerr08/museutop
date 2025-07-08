@@ -1,3 +1,5 @@
+// Arquivo: dreerr08/museutop/museutop-6ea31f3c45b1c0f813e03be5a1425dc73cd4b2a0/Script/Dedução/Validação/DeducaoJogador.cs
+
 /// <summary>
 /// Armazena o estado atual das deduções de um jogador para um único personagem.
 /// </summary>
@@ -32,6 +34,11 @@ public class DeducaoJogador
     public DestinoFinal destinoEscolhido;
 
     /// <summary>
+    /// (NOVO) O ID do assassino que o jogador atribuiu a este personagem.
+    /// </summary>
+    public int idAssassinoEscolhido;
+
+    /// <summary>
     /// Uma flag para saber se esta dedução já foi validada como correta.
     /// </summary>
     public bool estaConfirmado;
@@ -47,6 +54,7 @@ public class DeducaoJogador
         // MUDANÇA: Define o estado inicial como Desconhecido em vez de null.
         this.papelEscolhido = PapelNoRoubo.Desconhecido;
         this.destinoEscolhido = DestinoFinal.Desconhecido;
+        this.idAssassinoEscolhido = 0; // Começa com o padrão "Desconhecido"
         this.estaConfirmado = false;
     }
 }
