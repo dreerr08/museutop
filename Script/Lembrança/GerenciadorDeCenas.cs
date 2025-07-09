@@ -1,3 +1,5 @@
+// Arquivo: dreerr08/museutop/museutop-6ea31f3c45b1c0f813e03be5a1425dc73cd4b2a0/Script/Lembrança/GerenciadorDeCenas.cs
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -82,11 +84,8 @@ public class GerenciadorDeCenas : MonoBehaviour
         StartCoroutine(FadeAndLoadScene(estadoParaRestaurar.cenaDeRetorno, estadoParaRestaurar));
     }
 
-    // --- MÉTODO ALTERADO ---
     private IEnumerator FadeAndLoadScene(string sceneName, EstadoDeRetorno estadoParaRestaurar = null)
     {
-        // --- ADIÇÃO PRINCIPAL ---
-        // Salva o jogo antes de iniciar o fade out e a transição de cena.
         if (SaveLoadManager.Instance != null)
         {
             SaveLoadManager.Instance.SaveGame();
@@ -142,14 +141,19 @@ public class GerenciadorDeCenas : MonoBehaviour
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 100;
+
         GameObject imageGO = new GameObject("FadeImage");
-        imageGO.transform.SetParent(canvasGO.transform);
+        imageGO.transform.SetParent(canvasGO.transform, false); // O 'false' previne comportamentos de escala inesperados
+
         fadeImage = imageGO.AddComponent<Image>();
         fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, 0);
+
         RectTransform rectTransform = imageGO.GetComponent<RectTransform>();
         rectTransform.anchorMin = Vector2.zero;
         rectTransform.anchorMax = Vector2.one;
+        rectTransform.anchoredPosition = Vector2.zero; // <-- **MUDANÇA PRINCIPAL**
         rectTransform.sizeDelta = Vector2.zero;
+
         imageGO.SetActive(false);
     }
 }
